@@ -5,10 +5,37 @@ go:
   - 1.x
 
 install: PATH="$( ./utils/android-ndk.sh ):$PATH"
-script: ./utils/build.sh
+
+script:
+  - TGT=win32 GOOS=windows GOARCH=386 ./utils/build.sh
+  - TGT=win64 GOOS=windows GOARCH=amd64 ./utils/build.sh
+  - TGT=openbsd-i386 GOOS=openbsd GOARCH=386 GO386=387 ./utils/build.sh
+  - TGT=openbsd-amd64 GOOS=openbsd GOARCH=amd64 ./utils/build.sh
+  - TGT=freebsd-i386 GOOS=freebsd GOARCH=386 ./utils/build.sh
+  - TGT=freebsd-amd64 GOOS=freebsd GOARCH=amd64 ./utils/build.sh
+  - TGT=freebsd-arm GOOS=freebsd GOARCH=arm ./utils/build.sh
+  - TGT=freebsd-armv7 GOOS=freebsd GOARCH=arm GOARM=7 ./utils/build.sh
+  - TGT=dragonflybsd-amd64 GOOS=dragonfly GOARCH=amd64 ./utils/build.sh
+  - TGT=netbsd-i386 GOOS=netbsd GOARCH=386 ./utils/build.sh
+  - TGT=netbsd-amd64 GOOS=netbsd GOARCH=amd64 ./utils/build.sh
+  - TGT=solaris-amd64 GOOS=solaris GOARCH=amd64 ./utils/build.sh
+  - TGT=linux-i386 GOOS=linux GOARCH=386 CGO_ENABLED=0 ./utils/build.sh
+  - TGT=linux-x86_64 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 ./utils/build.sh
+  - TGT=linux-arm GOOS=linux GOARCH=arm CGO_ENABLED=0 ./utils/build.sh
+  - TGT=linux-arm64 GOOS=linux GOARCH=arm64 CGO_ENABLED=0 ./utils/build.sh
+  - TGT=linux-mips GOOS=linux GOARCH=mips GOMIPS=softfloat CGO_ENABLED=0 ./utils/build.sh
+  - TGT=linux-mipsle GOOS=linux GOARCH=mipsle GOMIPS=softfloat CGO_ENABLED=0 ./utils/build.sh
+  - TGT=linux-mips64 GOOS=linux GOARCH=mips64 CGO_ENABLED=0 ./utils/build.sh
+  - TGT=linux-mips64le GOOS=linux GOARCH=mips64le CGO_ENABLED=0 ./utils/build.sh
+  - TGT=macos GOOS=darwin GOARCH=amd64 ./utils/build.sh
+  - TGT=android-arm GOOS=android GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-androideabi-clang CXX=arm-linux-androideabi-clang++ ./utils/build.sh
+  - TGT=android-arm64 GOOS=android GOARCH=arm64 CGO_ENABLED=1 CC=aarch64-linux-android-clang CXX=aarch64-linux-android-clang++ ./utils/build.sh
+  - TGT=android-i386 GOOS=android GOARCH=386 CGO_ENABLED=1 CC=i686-linux-android-clang CXX=i686-linux-android-clang++ ./utils/build.sh
+  - TGT=android-x86_64 GOOS=android GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-linux-android-clang CXX=x86_64-linux-android-clang++ ./utils/build.sh
+
 after_success:
-  - cd dnscrypt-proxy/
-  - ls -l dnscrypt-proxy-*.tar.gz dnscrypt-proxy-*.zip
+  - ls -l build/*
+
 before_deploy: ./utils/sign.sh
 
 deploy:
@@ -16,9 +43,9 @@ deploy:
   api_key:
     secure: J3K/wo3oW/ySl6X4Zk5PX+EVy4fa0qa4fbpKNivogch5yjYw2pgrlSvwto9TM12Gxi4tTMKiWYK4YBapNf+tm501s4OyS1G1rJR1fZ+iyaHgGBLD+QppbivZt+P7Do56agSili68Zcgm7MQfZbvOq9z42z3AJ71+UNTJmTp63voaAuyOF/VdLsmJHMd/5nmFJH6mfMrgMs720GCWxFgdq3NRM2AdVldsp1YmNb4qKqIzunmfxqG9TqVlpq35tNOhWA/Ll3rbsiDVeUpBAW5ked/qHyGRkFVk44O6cPSFGe035Txx0JviBshGxsNSP+aJL9T55hIj1dmuk6g5uhPqABU/zcdJvXOv11oqJuV/DGHO31UfVN6u744LJY6Y1lkd+UUNiOJDPGC80+6M2GbP7BFMZiO5qnYkxzktnYg9b6zIPwmj96XZSniDTAn+qemJf2S8rzShvBtWX29Q4odIaCfFUY8i0muowQ4Vep5S5FqVG+r/rQTXOUIUsNv4r/gP/y5hdtOMC2r1VSvWk068upmW6ovCtcmTghSfYcLCG5r+g5OE2mKj9kbx6RQMspewk9+pvOhNZKXsn/AIvvDC4V46MaDjFkdYN0VbsYB5NH11DGCPH7vDwJnAzzMWnofCkiTG07dJYlLUnD9iUgYoNkrxivAgQKnDP8C6Ka0RGdk=
   file:
-    - dnscrypt-proxy-*.tar.gz
-    - dnscrypt-proxy-*.zip
-    - dnscrypt-proxy-*.minisig
+    - build/dnscrypt-proxy-*.tar.gz
+    - build/dnscrypt-proxy-*.zip
+    - build/dnscrypt-proxy-*.minisig
   file_glob: true
   skip_cleanup: true
   on:

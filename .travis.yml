@@ -13,11 +13,11 @@ jobs:
   include:
     - arch: arm64
     - stage: build
+      name: win+linux
       workspaces:
         create:
           name: build
           paths: $BUILD_DIR
-      install: PATH="$( ./utils/android-ndk.sh ):$PATH"
       script:
         - TGT=win32 GOOS=windows GOARCH=386 ./utils/build.sh
         - TGT=win64 GOOS=windows GOARCH=amd64 ./utils/build.sh
@@ -29,6 +29,12 @@ jobs:
         - TGT=linux-mipsle GOOS=linux GOARCH=mipsle GOMIPS=softfloat CGO_ENABLED=0 ./utils/build.sh
         - TGT=linux-mips64 GOOS=linux GOARCH=mips64 CGO_ENABLED=0 ./utils/build.sh
         - TGT=linux-mips64le GOOS=linux GOARCH=mips64le CGO_ENABLED=0 ./utils/build.sh
+    - name: unix
+      workspaces:
+        create:
+          name: build-unix
+          paths: $BUILD_DIR
+      script:
         - TGT=openbsd-i386 GOOS=openbsd GOARCH=386 GO386=387 ./utils/build.sh
         - TGT=openbsd-amd64 GOOS=openbsd GOARCH=amd64 ./utils/build.sh
         - TGT=freebsd-i386 GOOS=freebsd GOARCH=386 ./utils/build.sh
@@ -40,6 +46,13 @@ jobs:
         - TGT=netbsd-amd64 GOOS=netbsd GOARCH=amd64 ./utils/build.sh
         - TGT=solaris-amd64 GOOS=solaris GOARCH=amd64 ./utils/build.sh
         - TGT=macos GOOS=darwin GOARCH=amd64 ./utils/build.sh
+    - name: android
+      workspaces:
+        create:
+          name: build-android
+          paths: $BUILD_DIR
+      install: PATH="$( ./utils/android-ndk.sh ):$PATH"
+      script:
         - TGT=android-arm GOOS=android GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-androideabi-clang CXX=arm-linux-androideabi-clang++ ./utils/build.sh
         - TGT=android-arm64 GOOS=android GOARCH=arm64 CGO_ENABLED=1 CC=aarch64-linux-android-clang CXX=aarch64-linux-android-clang++ ./utils/build.sh
         - TGT=android-i386 GOOS=android GOARCH=386 CGO_ENABLED=1 CC=i686-linux-android-clang CXX=i686-linux-android-clang++ ./utils/build.sh
@@ -47,7 +60,10 @@ jobs:
     - stage: deploy
       language: shell
       workspaces:
-        use: build
+        use:
+          - build
+          - build-unix
+          - build-android
       script: ls -l $BUILD_DIR/*
       before_deploy: ./utils/sign.sh
       deploy:

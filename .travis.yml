@@ -13,6 +13,10 @@ jobs:
   include:
     - arch: arm64
     - stage: build
+      workspaces:
+        create:
+          name: build
+          paths: $BUILD_DIR
       install: PATH="$( ./utils/android-ndk.sh ):$PATH"
       script:
         - TGT=win32 GOOS=windows GOARCH=386 ./utils/build.sh
@@ -40,16 +44,20 @@ jobs:
         - TGT=android-arm64 GOOS=android GOARCH=arm64 CGO_ENABLED=1 CC=aarch64-linux-android-clang CXX=aarch64-linux-android-clang++ ./utils/build.sh
         - TGT=android-i386 GOOS=android GOARCH=386 CGO_ENABLED=1 CC=i686-linux-android-clang CXX=i686-linux-android-clang++ ./utils/build.sh
         - TGT=android-x86_64 GOOS=android GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-linux-android-clang CXX=x86_64-linux-android-clang++ ./utils/build.sh
-      after_success: ls -l build/*
+    - stage: deploy
+      language: shell
+      workspaces:
+        use: build
+      script: ls -l $BUILD_DIR/*
       before_deploy: ./utils/sign.sh
       deploy:
         provider: releases
         api_key:
           secure: J3K/wo3oW/ySl6X4Zk5PX+EVy4fa0qa4fbpKNivogch5yjYw2pgrlSvwto9TM12Gxi4tTMKiWYK4YBapNf+tm501s4OyS1G1rJR1fZ+iyaHgGBLD+QppbivZt+P7Do56agSili68Zcgm7MQfZbvOq9z42z3AJ71+UNTJmTp63voaAuyOF/VdLsmJHMd/5nmFJH6mfMrgMs720GCWxFgdq3NRM2AdVldsp1YmNb4qKqIzunmfxqG9TqVlpq35tNOhWA/Ll3rbsiDVeUpBAW5ked/qHyGRkFVk44O6cPSFGe035Txx0JviBshGxsNSP+aJL9T55hIj1dmuk6g5uhPqABU/zcdJvXOv11oqJuV/DGHO31UfVN6u744LJY6Y1lkd+UUNiOJDPGC80+6M2GbP7BFMZiO5qnYkxzktnYg9b6zIPwmj96XZSniDTAn+qemJf2S8rzShvBtWX29Q4odIaCfFUY8i0muowQ4Vep5S5FqVG+r/rQTXOUIUsNv4r/gP/y5hdtOMC2r1VSvWk068upmW6ovCtcmTghSfYcLCG5r+g5OE2mKj9kbx6RQMspewk9+pvOhNZKXsn/AIvvDC4V46MaDjFkdYN0VbsYB5NH11DGCPH7vDwJnAzzMWnofCkiTG07dJYlLUnD9iUgYoNkrxivAgQKnDP8C6Ka0RGdk=
         file:
-          - build/dnscrypt-proxy-*.tar.gz
-          - build/dnscrypt-proxy-*.zip
-          - build/dnscrypt-proxy-*.minisig
+          - $BUILD_DIR/dnscrypt-proxy-*.tar.gz
+          - $BUILD_DIR/dnscrypt-proxy-*.zip
+          - $BUILD_DIR/dnscrypt-proxy-*.minisig
         file_glob: true
         skip_cleanup: true
         on:
@@ -59,3 +67,4 @@ jobs:
 env:
   global:
     - secure: cuTXb4v5NwTr1XmkiHGkFir8fMiiBMnraCrls3thdDRlSTix0CiQc/H5Vh8SHauuG6VwVyrCT/Xsf0UQUmnULkPHjvuiNehb+bG4J3fz7hF94glBdQ8vxTuMmnHfJEYTQRLwCsWMBEC1wekw13O8J/0opFNG5neduns3Z1/rD5VSlBwgc8/4lomEp0fadIvzLeS7f5mxeXAD5Z9KBmc09uCjxVoF9Qsk1r901B0c0RMxIbJWyW9ZhDIVr/aEUN/tU0EXMKOA85sizg2moAigb8RZ1WCTh7utLGKpAyQegNk/unkksKMzZFkUCwHkrxlujwoe93wUS4rvZ+3nHMtLQdR+OfMeVs4/zvvQVq2f3bOXgkxgvhq6Bop0RK0xyEJffa5hUFbGNKhIFkLFLn1Ok28t2q7NOFPr0H2egHlkwgPztyhYMYb9C5PW4zd9buI0LS5452C4jXH5raBMfx844wTzaBbN689AKiYb84Qesqczss/o7eC7V48kh823dlZ/s2//gtp1ceqdAtNvp4dy7X/ECA/vNlpYisrtkR/CsFpJjGoTvS37leVMpmc5bn39dkoa5ZLliu7CaFRefbavcWWEImVStll9FBQ6+Ck9+41gczl9Rr7eGIV9ZZ/fmdkLNgxIpoAhZRee/dZD+/0gUExHxXXn10MqPuNVytVPiuU=
+    - BUILD_DIR=$HOME/built

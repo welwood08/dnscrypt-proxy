@@ -20,5 +20,5 @@ cd -
 minisign -v
 echo '#' >/tmp/minisign.key
 echo "$MINISIGN_SK" >>/tmp/minisign.key
-cd build
+cd "${BUILD_DIR:-build}"
 echo | minisign -s /tmp/minisign.key -Sm dnscrypt-proxy-*.tar.gz dnscrypt-proxy-*.zip

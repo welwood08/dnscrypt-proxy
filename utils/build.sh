@@ -9,17 +9,18 @@ set -ev
 if [ -z "$TGT" ]; then
     echo >&2 "\$TGT cannot be empty" && exit 1
 fi
-mkdir -p build/"$TGT"
-go build -mod vendor -ldflags="-s -w" -o build/"$TGT" ./...
-file build/"$TGT"/*
+BUILD_DIR="${BUILD_DIR:-build}"
+mkdir -p "$BUILD_DIR/$TGT"
+go build -mod vendor -ldflags="-s -w" -o "$BUILD_DIR/$TGT" ./...
+file "$BUILD_DIR/$TGT"/*
 if [ "$GOOS" = 'windows' ]; then
-    cp LICENSE dnscrypt-proxy/example-*.{toml,txt} build/"$TGT"/
-    for i in build/"$TGT"/LICENSE build/"$TGT"/*.{toml,txt}; do ex -bsc '%!awk "{sub(/$/,\"\r\")}1"' -cx "$i"; done
-    ln windows/* build/"$TGT"/
+    cp LICENSE dnscrypt-proxy/example-*.{toml,txt} "$BUILD_DIR/$TGT"/
+    for i in "$BUILD_DIR/$TGT"/LICENSE "$BUILD_DIR/$TGT"/*.{toml,txt}; do ex -bsc '%!awk "{sub(/$/,\"\r\")}1"' -cx "$i"; done
+    ln windows/* "$BUILD_DIR/$TGT"/
 else
-    ln LICENSE dnscrypt-proxy/example-*.{toml,txt} build/"$TGT"/
+    ln LICENSE dnscrypt-proxy/example-*.{toml,txt} "$BUILD_DIR/$TGT"/
 fi
-cd build
+cd "$BUILD_DIR"
 case "$GOOS" in
 windows | android)
     zip -9 -r dnscrypt-proxy-"$TGT"-"${TRAVIS_TAG:-dev}".zip "$TGT"

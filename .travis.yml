@@ -5,9 +5,16 @@ os:
   - windows
 go:
   - 1.x
+cache:
+  ccache: true
+  directories:
+    - "$( go env GOCACHE )"
 
 install: skip
+before_script: if [ -n "$TRAVIS_TAG" ]; then go clean -cache -mod vendor; fi
 script: go test -mod vendor ./...
+before_cache:
+  - rm -f "$( go env GOCACHE )"/log.txt
 
 jobs:
   include:
@@ -18,22 +25,24 @@ jobs:
         create:
           name: build
           paths: $BUILD_DIR
+      env: CACHE_NAME=win+linux CGO_ENABLED=0
       script:
         - TGT=win32 GOOS=windows GOARCH=386 ./utils/build.sh
         - TGT=win64 GOOS=windows GOARCH=amd64 ./utils/build.sh
-        - TGT=linux-i386 GOOS=linux GOARCH=386 CGO_ENABLED=0 ./utils/build.sh
-        - TGT=linux-x86_64 GOOS=linux GOARCH=amd64 CGO_ENABLED=0 ./utils/build.sh
-        - TGT=linux-arm GOOS=linux GOARCH=arm CGO_ENABLED=0 ./utils/build.sh
-        - TGT=linux-arm64 GOOS=linux GOARCH=arm64 CGO_ENABLED=0 ./utils/build.sh
-        - TGT=linux-mips GOOS=linux GOARCH=mips GOMIPS=softfloat CGO_ENABLED=0 ./utils/build.sh
-        - TGT=linux-mipsle GOOS=linux GOARCH=mipsle GOMIPS=softfloat CGO_ENABLED=0 ./utils/build.sh
-        - TGT=linux-mips64 GOOS=linux GOARCH=mips64 CGO_ENABLED=0 ./utils/build.sh
-        - TGT=linux-mips64le GOOS=linux GOARCH=mips64le CGO_ENABLED=0 ./utils/build.sh
+        - TGT=linux-i386 GOOS=linux GOARCH=386 ./utils/build.sh
+        - TGT=linux-x86_64 GOOS=linux GOARCH=amd64 ./utils/build.sh
+        - TGT=linux-arm GOOS=linux GOARCH=arm ./utils/build.sh
+        - TGT=linux-arm64 GOOS=linux GOARCH=arm64 ./utils/build.sh
+        - TGT=linux-mips GOOS=linux GOARCH=mips GOMIPS=softfloat ./utils/build.sh
+        - TGT=linux-mipsle GOOS=linux GOARCH=mipsle GOMIPS=softfloat ./utils/build.sh
+        - TGT=linux-mips64 GOOS=linux GOARCH=mips64 ./utils/build.sh
+        - TGT=linux-mips64le GOOS=linux GOARCH=mips64le ./utils/build.sh
     - name: unix
       workspaces:
         create:
           name: build-unix
           paths: $BUILD_DIR
+      env: CACHE_NAME=unix CGO_ENABLED=0
       script:
         - TGT=openbsd-i386 GOOS=openbsd GOARCH=386 GO386=387 ./utils/build.sh
         - TGT=openbsd-amd64 GOOS=openbsd GOARCH=amd64 ./utils/build.sh
@@ -51,12 +60,13 @@ jobs:
         create:
           name: build-android
           paths: $BUILD_DIR
+      env: CACHE_NAME=android CGO_ENABLED=1
       install: PATH="$( ./utils/android-ndk.sh ):$PATH"
       script:
-        - TGT=android-arm GOOS=android GOARCH=arm GOARM=7 CGO_ENABLED=1 CC=arm-linux-androideabi-clang CXX=arm-linux-androideabi-clang++ ./utils/build.sh
-        - TGT=android-arm64 GOOS=android GOARCH=arm64 CGO_ENABLED=1 CC=aarch64-linux-android-clang CXX=aarch64-linux-android-clang++ ./utils/build.sh
-        - TGT=android-i386 GOOS=android GOARCH=386 CGO_ENABLED=1 CC=i686-linux-android-clang CXX=i686-linux-android-clang++ ./utils/build.sh
-        - TGT=android-x86_64 GOOS=android GOARCH=amd64 CGO_ENABLED=1 CC=x86_64-linux-android-clang CXX=x86_64-linux-android-clang++ ./utils/build.sh
+        - TGT=android-arm GOOS=android GOARCH=arm GOARM=7 CC=arm-linux-androideabi-clang CXX=arm-linux-androideabi-clang++ ./utils/build.sh
+        - TGT=android-arm64 GOOS=android GOARCH=arm64 CC=aarch64-linux-android-clang CXX=aarch64-linux-android-clang++ ./utils/build.sh
+        - TGT=android-i386 GOOS=android GOARCH=386 CC=i686-linux-android-clang CXX=i686-linux-android-clang++ ./utils/build.sh
+        - TGT=android-x86_64 GOOS=android GOARCH=amd64 CC=x86_64-linux-android-clang CXX=x86_64-linux-android-clang++ ./utils/build.sh
     - stage: deploy
       language: shell
       workspaces:
@@ -64,6 +74,7 @@ jobs:
           - build
           - build-unix
           - build-android
+      cache: ccache
       script: ls -l $BUILD_DIR/*
       before_deploy: ./utils/sign.sh
       deploy:

@@ -6,19 +6,19 @@
 set -ev
 
 mkdir -p /tmp/bin /tmp/lib /tmp/include
-export LD_LIBRARY_PATH=/tmp/lib:LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/tmp/lib:$LD_LIBRARY_PATH
 export PATH=/tmp/bin:$PATH
 git clone --depth 1 https://github.com/jedisct1/libsodium.git --branch=stable
 cd libsodium
 env ./configure --disable-dependency-tracking --prefix=/tmp
-make -j$(nproc) install
+make -j"$(nproc)" install
 cd -
 git clone --depth 1 https://github.com/jedisct1/minisign.git
 cd minisign/src
-gcc -O2 -o /tmp/bin/minisign -I/tmp/include -L/tmp/lib *.c -lsodium
+gcc -O2 -o /tmp/bin/minisign -I/tmp/include -L/tmp/lib -lsodium -- *.c
 cd -
 minisign -v
 echo '#' >/tmp/minisign.key
 echo "$MINISIGN_SK" >>/tmp/minisign.key
 cd "${BUILD_DIR:-build}"
-echo | minisign -s /tmp/minisign.key -Sm dnscrypt-proxy-*.tar.gz dnscrypt-proxy-*.zip
+echo | minisign -s /tmp/minisign.key -Sm dnscrypt-proxy-*.{tar.gz,zip}

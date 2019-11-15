@@ -1,0 +1,39 @@
+name: ci
+on:
+  push:
+    paths:
+      ["**.go", "go.*", "**/testdata/**", ".git*", ".github/workflows/ci.yml"]
+  pull_request:
+    paths:
+      ["**.go", "go.*", "**/testdata/**", ".git*", ".github/workflows/ci.yml"]
+env:
+  GOFLAGS: "-mod=vendor"
+
+jobs:
+  unit-test:
+    strategy:
+      matrix:
+        go: [1.x]
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go }}
+      - name: Read environment
+        run: |
+          echo "::set-output name=gocache::$(go env GOCACHE)"
+          echo "::set-output name=ver::$ImageVersion $(go version)"
+        shell: bash
+        id: env
+      - uses: actions/cache@v1
+        with:
+          path: ${{ steps.env.outputs.gocache }}
+          key: ${{ matrix.os }} ${{ steps.env.outputs.ver }} ${{ hashFiles('go.sum') }}
+
+      - run: go test ./...
+        shell: bash

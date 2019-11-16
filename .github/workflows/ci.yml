@@ -37,3 +37,29 @@ jobs:
 
       - run: go test ./...
         shell: bash
+
+  build-minisign:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install libsodium headers
+        run: sudo apt install libsodium-dev
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+          repository: jedisct1/minisign
+          ref: master
+
+      - name: Compile
+        run: |
+          gcc -O2 -s -w -o minisign "$RUNNER_WORKSPACE"/minisign/src/*.c -lsodium
+          file minisign
+          ./minisign -v
+      - name: Sign
+        run: echo | ./minisign -Ss <(echo "$MINISIGN_SK") -t "timestamp:$(date +%s) trigger:$GITHUB_EVENT_NAME actor:$GITHUB_ACTOR url:https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA" -m minisign
+        env:
+          MINISIGN_SK: ${{ secrets.MINISIGN_SK }}
+      - uses: actions/upload-artifact@v1
+        with:
+          name: minisign
+          path: .

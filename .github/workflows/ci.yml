@@ -2,10 +2,20 @@ name: ci
 on:
   push:
     paths:
-      ["**.go", "go.*", "**/testdata/**", ".git*", ".github/workflows/ci.yml"]
+      - "**.go"
+      - "go.*"
+      - "**/testdata/**"
+      - "utils/build.sh"
+      - ".git*"
+      - ".github/workflows/ci.yml"
   pull_request:
     paths:
-      ["**.go", "go.*", "**/testdata/**", ".git*", ".github/workflows/ci.yml"]
+      - "**.go"
+      - "go.*"
+      - "**/testdata/**"
+      - "utils/build.sh"
+      - ".git*"
+      - ".github/workflows/ci.yml"
 env:
   GOFLAGS: "-mod=vendor"
 
@@ -63,3 +73,90 @@ jobs:
         with:
           name: minisign
           path: .
+
+  build:
+    needs: [unit-test, build-minisign]
+    strategy:
+      matrix:
+        tgt:
+          - win32
+          - win64
+          - linux-i386
+          - linux-x86_64
+          - linux-arm
+          - linux-arm64
+          - linux-mips
+          - linux-mipsle
+          - linux-mips64
+          - linux-mips64le
+          - openbsd-i386
+          - openbsd-amd64
+          - freebsd-i386
+          - freebsd-amd64
+          - freebsd-arm
+          - freebsd-armv7
+          - dragonflybsd-amd64
+          - netbsd-i386
+          - netbsd-amd64
+          - solaris-amd64
+          - macos
+          - android-arm
+          - android-arm64
+          - android-i386
+          - android-x86_64
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-go@v1
+        with:
+          go-version: 1.x
+      - name: Read environment
+        run: |
+          echo "::set-output name=gocache::$(go env GOCACHE)"
+          echo "::set-output name=ver::$ImageVersion $(go version)"
+        id: env
+      - uses: actions/cache@v1
+        with:
+          path: ${{ steps.env.outputs.gocache }}
+          key: ubuntu-latest ${{ steps.env.outputs.ver }} ${{ hashFiles('go.sum') }} ${{ matrix.tgt }}
+      - uses: actions/download-artifact@v1
+        with:
+          name: minisign
+
+      - name: Compile and package
+        run: utils/build.sh ${{ matrix.tgt }}
+      - name: Sign
+        run: |
+          chmod +x minisign/minisign # https://github.com/actions/upload-artifact/issues/20 https://github.com/actions/download-artifact/issues/9
+          echo | minisign/minisign -Ss <(echo "$MINISIGN_SK") -t "timestamp:$(date +%s) trigger:$GITHUB_EVENT_NAME actor:$GITHUB_ACTOR url:https://github.com/$GITHUB_REPOSITORY/commit/$GITHUB_SHA" -m build/*-${{ matrix.tgt }}-*
+        env:
+          MINISIGN_SK: ${{ secrets.MINISIGN_SK }}
+      - uses: actions/upload-artifact@v1
+        with:
+          name: ${{ matrix.tgt }}
+          path: build
+  # integrate-arm:
+  #   name: integrate
+  #   needs: build
+  #   strategy:
+  #     matrix:
+  #       arch: [armv7, aarch64] # armv6 (no ubuntu), s390x, ppc64le
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: uraimo/run-on-arch-action@v1
+  #       id: runcmd
+  #       with:
+  #         architecture: ${{ matrix.arch }}
+  #         distribution: ubuntu18.04 # jessie, stretch, buster, ubuntu16.04
+  #         run: |
+  #           uname -a
+  #           echo ::set-output name=uname::$(uname -a)
+  #     - name: Get the output
+  #       run: |
+  #         echo "The uname output was ${{ steps.runcmd.outputs.uname }}"
+  # release:
+  #   needs: build # [integrate, integrate-arm, integrate-systemd, ...]
+  #   runs-on: ubuntu-latest
+  #   if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
+  #   if: startsWith(github.ref, 'refs/tags/')

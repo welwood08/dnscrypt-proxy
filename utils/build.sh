@@ -92,7 +92,7 @@ file "$BUILD_DIR/$TGT"/*
 
 if [ "$GOOS" = 'windows' ]; then
     cp -t "$BUILD_DIR/$TGT" LICENSE dnscrypt-proxy/example-*.{toml,txt}
-    for i in "$BUILD_DIR/$TGT"/LICENSE "$BUILD_DIR/$TGT"/*.{toml,txt}; do ex -bsc '%!awk "{sub(/$/,\"\r\")}1"' -cx "$i"; done
+    #for i in "$BUILD_DIR/$TGT"/LICENSE "$BUILD_DIR/$TGT"/*.{toml,txt}; do ex -bsc '%!awk "{sub(/$/,\"\r\")}1"' -cx "$i"; done
     ln -t "$BUILD_DIR/$TGT" windows/*
 else
     ln -t "$BUILD_DIR/$TGT" LICENSE dnscrypt-proxy/example-*.{toml,txt}

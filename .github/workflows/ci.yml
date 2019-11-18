@@ -24,7 +24,7 @@ jobs:
     strategy:
       matrix:
         go: [1.x]
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest] #, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -79,31 +79,31 @@ jobs:
     strategy:
       matrix:
         tgt:
-          - win32
+          # - win32
           - win64
-          - linux-i386
+          # - linux-i386
           - linux-x86_64
-          - linux-arm
+          # - linux-arm
           - linux-arm64
-          - linux-mips
-          - linux-mipsle
-          - linux-mips64
-          - linux-mips64le
-          - openbsd-i386
-          - openbsd-amd64
-          - freebsd-i386
-          - freebsd-amd64
-          - freebsd-arm
-          - freebsd-armv7
-          - dragonflybsd-amd64
-          - netbsd-i386
-          - netbsd-amd64
-          - solaris-amd64
+          # - linux-mips
+          # - linux-mipsle
+          # - linux-mips64
+          # - linux-mips64le
+          # - openbsd-i386
+          # - openbsd-amd64
+          # - freebsd-i386
+          # - freebsd-amd64
+          # - freebsd-arm
+          # - freebsd-armv7
+          # - dragonflybsd-amd64
+          # - netbsd-i386
+          # - netbsd-amd64
+          # - solaris-amd64
           - macos
-          - android-arm
-          - android-arm64
-          - android-i386
-          - android-x86_64
+          # - android-arm
+          # - android-arm64
+          # - android-i386
+          # - android-x86_64
     runs-on: ubuntu-latest
 
     steps:
@@ -136,27 +136,46 @@ jobs:
         with:
           name: ${{ matrix.tgt }}
           path: build
-  # integrate-arm:
-  #   name: integrate
-  #   needs: build
-  #   strategy:
-  #     matrix:
-  #       arch: [armv7, aarch64] # armv6 (no ubuntu), s390x, ppc64le
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: uraimo/run-on-arch-action@v1
-  #       id: runcmd
-  #       with:
-  #         architecture: ${{ matrix.arch }}
-  #         distribution: ubuntu18.04 # jessie, stretch, buster, ubuntu16.04
-  #         run: |
-  #           uname -a
-  #           echo ::set-output name=uname::$(uname -a)
-  #     - name: Get the output
-  #       run: |
-  #         echo "The uname output was ${{ steps.runcmd.outputs.uname }}"
+
+  integrate:
+    needs: build
+    strategy:
+      matrix:
+        artifact: [linux-arm64, linux-x86_64, macos, win64]
+        include:
+          - artifact: linux-arm
+            os: ubuntu-latest
+            arch: armv7
+          - artifact: linux-arm64
+            os: ubuntu-latest
+            arch: aarch64
+          - artifact: linux-x86_64
+            os: ubuntu-latest
+          - artifact: macos
+            os: macos-latest
+          - artifact: win64
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v1
+        with:
+          fetch-depth: 1
+      - uses: actions/download-artifact@v1
+        with:
+          name: ${{ matrix.artifact }}
+          path: build
+      - if: matrix.arch == null
+        run: utils/integration.sh
+        shell: bash
+      - if: matrix.arch
+        uses: uraimo/run-on-arch-action@master
+        with:
+          architecture: ${{ matrix.arch }}
+          distribution: ubuntu18.04 # jessie, stretch, buster, ubuntu16.04
+          run: utils/integration.sh
   # release:
-  #   needs: build # [integrate, integrate-arm, integrate-systemd, ...]
+  #   needs: build # [integrate, integrate-qemu, integrate-systemd, ...]
   #   runs-on: ubuntu-latest
   #   if: github.event.pull_request.base.repo.id == github.event.pull_request.head.repo.id
   #   if: startsWith(github.ref, 'refs/tags/')

@@ -60,6 +60,7 @@ func (handler localDoHHandler) ServeHTTP(writer http.ResponseWriter, request *ht
 }
 
 func (proxy *Proxy) localDoHListener(acceptPc *net.TCPListener) {
+	dlog.Noticef("Now listening to https://%v%v [DoH]", acceptPc.Addr(), proxy.localDoHPath)
 	defer acceptPc.Close()
 	noh2 := make(map[string]func(*http.Server, *tls.Conn, http.Handler))
 	httpServer := &http.Server{

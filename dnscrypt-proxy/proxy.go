@@ -141,10 +141,8 @@ func (proxy *Proxy) addDNSListener(listenAddrStr string) {
 	}
 	FileDescriptorNum++
 
-	dlog.Noticef("Now listening to %v [UDP]", listenUDPAddr)
 	go proxy.udpListener(listenerUDP.(*net.UDPConn))
 
-	dlog.Noticef("Now listening to %v [TCP]", listenAddrStr)
 	go proxy.tcpListener(listenerTCP.(*net.TCPListener))
 }
 
@@ -186,7 +184,6 @@ func (proxy *Proxy) addLocalDoHListener(listenAddrStr string) {
 	}
 	FileDescriptorNum++
 
-	dlog.Noticef("Now listening to https://%v%v [DoH]", listenAddrStr, proxy.localDoHPath)
 	go proxy.localDoHListener(listenerTCP.(*net.TCPListener))
 }
 
@@ -254,6 +251,7 @@ func (proxy *Proxy) StartProxy() {
 }
 
 func (proxy *Proxy) udpListener(clientPc *net.UDPConn) {
+	dlog.Noticef("Now listening to %v [UDP]", clientPc.LocalAddr())
 	defer clientPc.Close()
 	for {
 		buffer := make([]byte, MaxDNSPacketSize-1)
@@ -279,12 +277,12 @@ func (proxy *Proxy) udpListenerFromAddr(listenAddr *net.UDPAddr) error {
 	if err != nil {
 		return err
 	}
-	dlog.Noticef("Now listening to %v [UDP]", listenAddr)
 	go proxy.udpListener(clientPc)
 	return nil
 }
 
 func (proxy *Proxy) tcpListener(acceptPc *net.TCPListener) {
+	dlog.Noticef("Now listening to %v [TCP]", acceptPc.Addr())
 	defer acceptPc.Close()
 	for {
 		clientPc, err := acceptPc.Accept()
@@ -317,7 +315,6 @@ func (proxy *Proxy) tcpListenerFromAddr(listenAddr *net.TCPAddr) error {
 	if err != nil {
 		return err
 	}
-	dlog.Noticef("Now listening to %v [TCP]", listenAddr)
 	go proxy.tcpListener(acceptPc)
 	return nil
 }
@@ -327,7 +324,6 @@ func (proxy *Proxy) localDoHListenerFromAddr(listenAddr *net.TCPAddr) error {
 	if err != nil {
 		return err
 	}
-	dlog.Noticef("Now listening to https://%v%v [DoH]", listenAddr, proxy.localDoHPath)
 	go proxy.localDoHListener(acceptPc)
 	return nil
 }
